@@ -17,7 +17,7 @@
 <div class="navbar navbar-fixed-top navbar-inverse">
     <div class="navbar-inner">
         <div class="container">
-            <a class="brand" href="/">{{ config.site_name }}</a>
+            <a class="brand" href="/"><img src="/static/img/logo.png"/>&nbsp;&nbsp;{{ config.site_name }}</a>
             <ul class="nav">
                 <li class="active">
                 <a href="/">博客</a>
@@ -34,12 +34,18 @@
 </div>
 <div class="container">
     <div class="row">
-        <div class="span9">
+        <div class="span8">
             {% block content %}{% endblock %}
         </div>
-        <div class="span3">右边栏的内容</div>
+        <div class="span4">右边栏的内容</div>
     </div>
-
+</div>
+<div class="navbar navbar-fixed-bottom">
+    <div class="navbar-inner">
+        <div class="container">
+            @咕咚网&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Powered By <a href="https://github.com/ipconfiger/blogen">Blogen</a>
+        </div>
+    </div>
 </div>
 <script src="/static/js/bootstrap.min.js"></script>
 </body>

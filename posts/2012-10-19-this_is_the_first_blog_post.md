@@ -1,9 +1,9 @@
----
-title:this is the first blog post
-post_time:21-9-57
----
+///
+title=this_is_the_first_blog_post
+post_time=21-41-2
+///
 
 
-this is the first blog post
+this_is_the_first_blog_post
 ===============
 write the post body here

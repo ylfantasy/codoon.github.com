@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %} {{ config.site_name }} {% endblock %}
+{% block content %}
+{% for post in posts %}
+    <dl>
+        <dt><h2><a href="/html/{{ post.filename }}.html">{{ post.title }}</a></h2></dt>
+        <dd>{{ post.post_date }}</dd>
+    </dl>
+{% endfor %}
+<ul>
+    {% for page_id,url in page_list %}
+        <li><a href="{{ url }}">{{ page_id }}</a></li>
+    {% endfor %}
+</ul>
+{% endblock %}
+    

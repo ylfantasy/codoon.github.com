@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ config.site_name }}-{{ post.filename }}</title>
+</head>
+<body>
+<h1>{{ post.title }}</h1>
+<div>
+    {{ post.html_content|safe }}
+</div>
+<div>{{ post.post_date }}</div>
+</body>
+</html>
+    

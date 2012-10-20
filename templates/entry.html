@@ -1,14 +1,16 @@
 <div class="row">
     <div class="span1">
+        {% if post.first_entry %}
         <div style="display:block;height: 80px;width: 80px; background: url(/static/img/calendar.png);text-align: center;">
             <div style="height: 12px;;">&nbsp;</div>
             <div style="text-align: center;font-size: 10px;color: #ffffff;"><strong>{{ post.post_date.year }}&nbsp;&nbsp;{{ post.post_date.month }}</strong></div>
             <div style="height: 5px;;">&nbsp;</div>
             <div style="text-align: center;font-size: 36px;color: #000000;">{{ post.post_date.day }}</div>
         </div>
+        {% endif%}
     </div>
     <div class="span7">
-        <h2><a href="/html/{{ post.filename }}.html">{{ post.title }}</a></h2>
+        <h1><a href="/html/{{ post.filename }}.html">{{ post.title }}</a></h1>
         <div>
             {{ post.html_content }}
         </div>

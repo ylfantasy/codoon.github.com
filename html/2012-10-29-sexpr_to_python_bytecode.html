@@ -1,0 +1,166 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+        "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="content-type" content="text/html;charset=UTF-8">
+    <title> 咕咚网黑科技-跳过Python源代码生成PythonVM字节码 </title>
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet"/>
+    <style>
+        body {
+            padding-top: 60px; /* 60px to make the container go all the way to the bottom of the topbar */
+            padding-bottom: 60px;
+        }
+    </style>
+    <script src="/static/js/jquery-1.8.1.min.js"></script>
+    
+</head>
+<body>
+<div class="navbar navbar-fixed-top navbar-inverse">
+    <div class="navbar-inner">
+        <div class="container">
+            <a class="brand" href="/"><img src="/static/img/logo.png"/>&nbsp;&nbsp;咕咚网黑科技</a>
+            <ul class="nav">
+                <li class="active">
+                <a href="/">博客</a>
+                </li>
+                <li><a href="http://www.codoon.com">咕咚网</a></li>
+                <li><a href="http://www.codoon.com/mall">咕咚商城</a></li>
+            </ul>
+            <form class="navbar-form pull-right">
+                <input type="text" class="span2">
+                <button type="submit" class="btn">搜索博客</button>
+            </form>
+        </div>
+    </div>
+</div>
+<div class="container">
+    <div class="row">
+        <div class="span8">
+            
+<div class="row">
+    <div class="span1">
+        
+        <div style="display:block;height: 80px;width: 80px; background: url(/static/img/calendar.png);text-align: center;">
+            <div style="height: 12px;;">&nbsp;</div>
+            <div style="text-align: center;font-size: 10px;color: #ffffff;"><strong>2012&nbsp;&nbsp;10</strong></div>
+            <div style="height: 5px;;">&nbsp;</div>
+            <div style="text-align: center;font-size: 36px;color: #000000;">29</div>
+        </div>
+        
+    </div>
+    <div class="span7">
+        <h1><a href="/html/2012-10-29-sexpr_to_python_bytecode.html">跳过Python源代码生成PythonVM字节码</a></h1>
+        <div>
+            <p>Python虽然被冠以脚本语言之名，但是事实上在运行的时候也是需要编译步骤的，与python源代码同名的.pyc文件既是编译后的结果，类似Java的字节码。</p>
+<p>同时与Java相比，Python的字节码要更加“高级”，因此编译速度是非常之快的，几乎很少感觉到编译消耗的时间，所以往往将编译与执行的步骤合并，不需要手动进行编译。在输入<em>python xxx.py</em>的时候，解释器在内存中将源代码解析生成字节码，并直接执行。但编译的过程毕竟还是有开销的，因此直接将字节码保存在文件中作为缓存，方便下次使用，保存的文件就是pyc文件。</p>
+<p>因为有.pyc文件的存在，就有可能绕开Python前端编译器来自己生成字节码交给解释器执行，甚至将自己的语言编译为字节码，就像JVM上的Scala、Clojure一样。</p>
+<h2>.pyc文件结构</h2>
+<p>首先要搞明白.pyc文件的内容，其实内容相当简单，文件前四个字节是<em>Python Magic Number</em>，不同版本的python可能不同，来保证某个版本的解释器不会意外执行了其他版本解释器生成的字节码。</p>
+<p>接下来的四个字节为编译时刻的Unix时间戳。每次对比此时间与源文件最后修改时间，即可知道字节码是否过期。这样python的编译过程对于程序员来说就是完全透明的了，每次<em>python xxx.py</em>就可保证执行的是最新的代码，有必要时编译结果会被缓存下来。</p>
+<p>剩下的内容看上去不容易解析，其实知道了这些都是marshal模块序列化之后的内容就简单了，直接调用marshal反序列化回去就是。python解释器内部也是用marshal模块将编译结果序列化到文件的。反序列化的结果是一个code对象。</p>
+<h2>code对象内容</h2>
+<p>Python虚拟机是一个Stack Machine（<em>这里特指CPython，估计Pypy一类的也都是，不过谁知道以后呢……</em>），每个code对象会对应一个stack。而源代码中的module、function、class、method会生成一个新的code对象，其实就是有自己作用域的对象会生成一个code对象，对应一个stack作为自己的作用域。</p>
+<p>下面是一个简单的Python module：</p>
+<p>a = 1
+b = 2
+print a + b</p>
+<p>对应code对象内容：</p>
+<p>('co_argcount', 0),
+('co_cellvars', ()),
+('co_code',
+'d\x00\x00Z\x00\x00d\x01\x00Z\x01\x00e\x00\x00e\x01\x00\x17GHd\x02\x00S'),
+('co_consts', (1, 2, None)),
+('co_filename', 'aaa.py'),
+('co_firstlineno', 1),
+('co_flags', 64),
+('co_freevars', ()),
+('co_lnotab', '\x06\x01\x06\x01'),
+('co_name', '<module>'),
+('co_names', ('a', 'b')),
+('co_nlocals', 0),
+('co_stacksize', 2),
+('co_varnames', ())</p>
+<p>这些就是一个stack运行全部需要的内容了。说清楚code对象的内容篇幅有些长，<a href="http://pycoders-weekly-chinese.readthedocs.org/en/latest/issue7/exploring-python-code-objects.html">这篇文章</a>有比较详细的讲述，《Python源码剖析》相关章节有更加详细的内容。这里只挑用到的几个介绍一下。</p>
+<p><em>co_consts</em>为常量表，保存代码中所有的常量。一段作用域内定义的函数/类会生成一个新的code对象，并保存在这个常量表中以供调用。<em>co_names</em>为符号表，保存代码中所有的变量名。<em>co_stacksize</em>为栈的大小，需要提前计算出栈最大占用的大小。由此可以大约看出Python虚拟机还是略微有些静态，所有需要的信息需要在编译时获得，栈的大小得提前指定。</p>
+<p>其中真正的字节码在<em>co_code</em>中，可以用<em>dis</em>模块查看对应的指令：</p>
+<p>1           0 LOAD_CONST               0 (1)
+3 STORE_NAME               0 (a)</p>
+<p>2           6 LOAD_CONST               1 (2)
+9 STORE_NAME               1 (b)</p>
+<p>3          12 LOAD_NAME                0 (a)
+15 LOAD_NAME                1 (b)
+18 BINARY_ADD
+19 PRINT_ITEM
+20 PRINT_NEWLINE
+21 LOAD_CONST               2 (None)
+24 RETURN_VALUE</p>
+<p>指令含义可以参考<a href="http://docs.python.org/2/library/dis.html#python-bytecode-instructions">这里</a>。另外<a href="https://gist.github.com/3951899">这个脚本</a>可以更清晰的分析.pyc文件，列出code对象所有的属性以及字节码，并遍历其中包括的所有code对象。</p>
+<h1>简单的S-Expression计算器</h1>
+<p>根据上面的知识，完全可以写一个自己的编译器来生成.pyc文件交给Python解释器来执行。不过这个目标稍微有些大，还是改为写一个计算器吧。需要做的很简单，就是把类似Lisp语言的S-Expression数学表达式编译为Python字节码。源代码类似这样：</p>
+<p>(+ 1
+(- 3
+(+ 1 1)))</p>
+<p>这种语法形式也叫做<em>波兰表示法</em>，类似传统的数学的表达式，只不过把操作符放在了操作数前面。而PythonVM是一个Stack Machine，指令集本质上是一串把操作符放在操作数后面的<em>逆波兰表示法</em>，因此需要先转换一下，就可以轻松的编译为Python字节码了。</p>
+<p>全部源代码如下，因为懒得写Parser了所以需要计算的的表达式直接用Python的元组表示了：</p>
+<script src="https://gist.github.com/3968518.js?file=sexpr2pyc.py"></script>
+
+<p>代码很简单，遇到操作数便入栈，遇到操作符则做相应的计算，这会将栈中最后两个操作数出栈并运算，将计算结果入栈。最后的<em>PRINT_ITEM</em>会将栈内的内容打印在屏幕上，<em>PRINT_NEWLINE</em>顾名思义。但是Python虚拟机规定所有的code对象最后要有返回结果，我们的计算并不需要返回结果，所以最后要用<em>RETURN_VALUE</em>返回一个<em>None</em>的结果。</p>
+<p>这里只实现了加减两个操作符，乘除类似，很简单就可以加上。另外探索的过程中发现Python在编译时会自动将类似<em>x = 1 + 2</em>的代码优化为<em>x = 3</em>。</p>
+<p>执行<em>python sexpr2pyc.py</em>即可在本目录下生成<em>test.pyc</em>文件，运行“python test.pyc”，可以得出结果为2。</p>
+        </div>
+        <div class="pull-right"><a class="label label-info" href="/html/2012-10-29-sexpr_to_python_bytecode.html#disqus_thread"></a></div>
+        <hr/>
+    </div>
+</div>
+<div class="row">
+    <div class="span7 offset1">
+        <div id="disqus_thread"></div>
+        <script type="text/javascript">
+            /* * * CONFIGURATION VARIABLES: EDIT BEFORE PASTING INTO YOUR WEBPAGE * * */
+            var disqus_shortname = 'codoonblog'; // required: replace example with your forum shortname
+
+            /* * * DON'T EDIT BELOW THIS LINE * * */
+            (function() {
+                var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+                dsq.src = 'http://' + disqus_shortname + '.disqus.com/embed.js';
+                (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+            })();
+        </script>
+        <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+        <a href="http://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+    </div>
+</div>
+<!-- JiaThis Button BEGIN -->
+<script type="text/javascript" src="http://v3.jiathis.com/code/jiathis_r.js?move=0&amp;btn=r2.gif" charset="utf-8"></script>
+<!-- JiaThis Button END -->
+
+        </div>
+        <div class="span4">
+            
+<iframe width="100%" height="550" class="share_self"  frameborder="0" scrolling="no" src="http://widget.weibo.com/weiboshow/index.php?language=&width=0&height=550&fansRow=2&ptype=1&speed=300&skin=10&isTitle=0&noborder=1&isWeibo=1&isFans=1&uid=1186373612&verifier=&dpc=1"></iframe>
+
+        </div>
+    </div>
+</div>
+<div class="navbar navbar-fixed-bottom">
+    <div class="navbar-inner">
+        <div class="container" style="text-align: center;">
+            @咕咚网&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Powered By <a href="https://github.com/ipconfiger/blogen">Blogen</a>
+        </div>
+    </div>
+</div>
+<script src="/static/js/bootstrap.min.js"></script>
+<script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES: EDIT BEFORE PASTING INTO YOUR WEBPAGE * * */
+    var disqus_shortname = 'codoonblog'; // required: replace example with your forum shortname
+
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function () {
+        var s = document.createElement('script'); s.async = true;
+        s.type = 'text/javascript';
+        s.src = 'http://' + disqus_shortname + '.disqus.com/count.js';
+        (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+    }());
+</script>
+</body>
+</html>

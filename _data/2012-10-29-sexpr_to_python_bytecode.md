@@ -2,7 +2,7 @@
 title=跳过Python源代码生成PythonVM字节码
 post_time=0-18-22
 weibo_id=1186373612
-code=1448dc03
+code=8ef712fb
 ///
 
 

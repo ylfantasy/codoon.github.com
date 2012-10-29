@@ -62,11 +62,15 @@
 <h2>code对象内容</h2>
 <p>Python虚拟机是一个Stack Machine（<em>这里特指CPython，估计Pypy一类的也都是，不过谁知道以后呢……</em>），每个code对象会对应一个stack。而源代码中的module、function、class、method会生成一个新的code对象，其实就是有自己作用域的对象会生成一个code对象，对应一个stack作为自己的作用域。</p>
 <p>下面是一个简单的Python module：</p>
-<p>a = 1
+<pre>
+a = 1
 b = 2
-print a + b</p>
+print a + b
+</pre>
+
 <p>对应code对象内容：</p>
-<p>('co_argcount', 0),
+<pre>
+('co_argcount', 0),
 ('co_cellvars', ()),
 ('co_code',
 'd\x00\x00Z\x00\x00d\x01\x00Z\x01\x00e\x00\x00e\x01\x00\x17GHd\x02\x00S'),
@@ -80,27 +84,37 @@ print a + b</p>
 ('co_names', ('a', 'b')),
 ('co_nlocals', 0),
 ('co_stacksize', 2),
-('co_varnames', ())</p>
+('co_varnames', ())
+</pre>
+
 <p>这些就是一个stack运行全部需要的内容了。说清楚code对象的内容篇幅有些长，<a href="http://pycoders-weekly-chinese.readthedocs.org/en/latest/issue7/exploring-python-code-objects.html">这篇文章</a>有比较详细的讲述，《Python源码剖析》相关章节有更加详细的内容。这里只挑用到的几个介绍一下。</p>
 <p><em>co_consts</em>为常量表，保存代码中所有的常量。一段作用域内定义的函数/类会生成一个新的code对象，并保存在这个常量表中以供调用。<em>co_names</em>为符号表，保存代码中所有的变量名。<em>co_stacksize</em>为栈的大小，需要提前计算出栈最大占用的大小。由此可以大约看出Python虚拟机还是略微有些静态，所有需要的信息需要在编译时获得，栈的大小得提前指定。</p>
 <p>其中真正的字节码在<em>co_code</em>中，可以用<em>dis</em>模块查看对应的指令：</p>
-<p>1           0 LOAD_CONST               0 (1)
-3 STORE_NAME               0 (a)</p>
-<p>2           6 LOAD_CONST               1 (2)
-9 STORE_NAME               1 (b)</p>
-<p>3          12 LOAD_NAME                0 (a)
+<pre><code>
+1           0 LOAD_CONST               0 (1)
+3 STORE_NAME               0 (a)
+
+2           6 LOAD_CONST               1 (2)
+9 STORE_NAME               1 (b)
+
+3          12 LOAD_NAME                0 (a)
 15 LOAD_NAME                1 (b)
 18 BINARY_ADD
 19 PRINT_ITEM
 20 PRINT_NEWLINE
 21 LOAD_CONST               2 (None)
-24 RETURN_VALUE</p>
+24 RETURN_VALUE
+</code></pre>
+
 <p>指令含义可以参考<a href="http://docs.python.org/2/library/dis.html#python-bytecode-instructions">这里</a>。另外<a href="https://gist.github.com/3951899">这个脚本</a>可以更清晰的分析.pyc文件，列出code对象所有的属性以及字节码，并遍历其中包括的所有code对象。</p>
 <h1>简单的S-Expression计算器</h1>
 <p>根据上面的知识，完全可以写一个自己的编译器来生成.pyc文件交给Python解释器来执行。不过这个目标稍微有些大，还是改为写一个计算器吧。需要做的很简单，就是把类似Lisp语言的S-Expression数学表达式编译为Python字节码。源代码类似这样：</p>
-<p>(+ 1
+<pre>
+(+ 1
 (- 3
-(+ 1 1)))</p>
+(+ 1 1)))
+</pre>
+
 <p>这种语法形式也叫做<em>波兰表示法</em>，类似传统的数学的表达式，只不过把操作符放在了操作数前面。而PythonVM是一个Stack Machine，指令集本质上是一串把操作符放在操作数后面的<em>逆波兰表示法</em>，因此需要先转换一下，就可以轻松的编译为Python字节码了。</p>
 <p>全部源代码如下，因为懒得写Parser了所以需要计算的的表达式直接用Python的元组表示了：</p>
 <script src="https://gist.github.com/3968518.js?file=sexpr2pyc.py"></script>

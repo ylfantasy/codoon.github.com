@@ -2,6 +2,7 @@
 title=跳过Python源代码生成PythonVM字节码
 post_time=0-18-22
 weibo_id=1186373612
+code=1448dc03
 ///
 
 
@@ -25,12 +26,15 @@ Python虚拟机是一个Stack Machine（*这里特指CPython，估计Pypy一类�
 
 下面是一个简单的Python module：
 
+<pre>
     a = 1
     b = 2
     print a + b
-   
+</pre>   
+
 对应code对象内容：
 
+<pre>
     ('co_argcount', 0),
     ('co_cellvars', ()),
     ('co_code',
@@ -46,6 +50,7 @@ Python虚拟机是一个Stack Machine（*这里特指CPython，估计Pypy一类�
     ('co_nlocals', 0),
     ('co_stacksize', 2),
     ('co_varnames', ())
+</pre>
 
 这些就是一个stack运行全部需要的内容了。说清楚code对象的内容篇幅有些长，[这篇文章](http://pycoders-weekly-chinese.readthedocs.org/en/latest/issue7/exploring-python-code-objects.html)有比较详细的讲述，《Python源码剖析》相关章节有更加详细的内容。这里只挑用到的几个介绍一下。
 
@@ -53,6 +58,7 @@ Python虚拟机是一个Stack Machine（*这里特指CPython，估计Pypy一类�
 
 其中真正的字节码在*co_code*中，可以用*dis*模块查看对应的指令：
 
+<pre><code>
     1           0 LOAD_CONST               0 (1)
                 3 STORE_NAME               0 (a)
 
@@ -66,6 +72,7 @@ Python虚拟机是一个Stack Machine（*这里特指CPython，估计Pypy一类�
                20 PRINT_NEWLINE
                21 LOAD_CONST               2 (None)
                24 RETURN_VALUE
+</code></pre>
 
 指令含义可以参考[这里](http://docs.python.org/2/library/dis.html#python-bytecode-instructions)。另外[这个脚本](https://gist.github.com/3951899)可以更清晰的分析.pyc文件，列出code对象所有的属性以及字节码，并遍历其中包括的所有code对象。
 
@@ -73,9 +80,11 @@ Python虚拟机是一个Stack Machine（*这里特指CPython，估计Pypy一类�
 
 根据上面的知识，完全可以写一个自己的编译器来生成.pyc文件交给Python解释器来执行。不过这个目标稍微有些大，还是改为写一个计算器吧。需要做的很简单，就是把类似Lisp语言的S-Expression数学表达式编译为Python字节码。源代码类似这样：
 
+<pre>
     (+ 1
       (- 3
         (+ 1 1)))
+</pre>
 
 这种语法形式也叫做*波兰表示法*，类似传统的数学的表达式，只不过把操作符放在了操作数前面。而PythonVM是一个Stack Machine，指令集本质上是一串把操作符放在操作数后面的*逆波兰表示法*，因此需要先转换一下，就可以轻松的编译为Python字节码了。
 
